@@ -5,10 +5,7 @@
 #import <substrate.h>
 
 #import <dlfcn.h>
-// jbroot(): roothide's own path resolver under that scheme, and libroot's runtime lookup under
-// every other one. It is what lets a single build find its bundles on rootful (no prefix),
-// rootless (/var/jb) and roothide (a per-install random path).
-#import <roothide.h>
+#import "../paths.h"
 
 #import "prefs.h"
 
@@ -395,13 +392,13 @@ static void pl_lazyLoadBundleCore(id self, SEL _cmd, PSSpecifier *specifier, voi
 	#if SIMULATOR
 	NSRange sysRange = [path rangeOfString:@"/opt/simject/PreferenceBundles" options:0];
 	#else
-	NSRange sysRange = [path rangeOfString:jbroot(@"/System/Library/PreferenceBundles") options:0];
+	NSRange sysRange = [path rangeOfString:PLRootPath(@"/System/Library/PreferenceBundles") options:0];
 	#endif
 	if(sysRange.location != NSNotFound) {
 		#if SIMULATOR
 		newPath = [path stringByReplacingCharactersInRange:sysRange withString:@"/opt/simject/PreferenceBundles"];
 		#else
-		newPath = [path stringByReplacingCharactersInRange:sysRange withString:jbroot(@"/Library/PreferenceBundles")];
+		newPath = [path stringByReplacingCharactersInRange:sysRange withString:PLRootPath(@"/Library/PreferenceBundles")];
 		#endif
 	}
 	if(newPath && [[NSFileManager defaultManager] fileExistsAtPath:newPath]) {
@@ -430,7 +427,7 @@ static void pl_lazyLoadBundleCore(id self, SEL _cmd, PSSpecifier *specifier, voi
 			#if SIMULATOR
 			bundlePath = [NSString stringWithFormat:@"/opt/simject/PreferenceBundles/%@.bundle", bundleName];
 			#else
-			bundlePath = [NSString stringWithFormat:@"%@/%@.bundle", jbroot(@"/Library/PreferenceBundles"), bundleName];
+			bundlePath = [NSString stringWithFormat:@"%@/%@.bundle", PLRootPath(@"/Library/PreferenceBundles"), bundleName];
 			#endif
 
 		// Third Try (/Library failed)
@@ -439,7 +436,7 @@ static void pl_lazyLoadBundleCore(id self, SEL _cmd, PSSpecifier *specifier, voi
 			#if SIMULATOR
 			bundlePath = [NSString stringWithFormat:@"/opt/simject/PreferenceBundles/%@.bundle", bundleName];
 			#else
-			bundlePath = [NSString stringWithFormat:@"%@/%@.bundle", jbroot(@"/System/Library/PreferenceBundles"), bundleName];
+			bundlePath = [NSString stringWithFormat:@"%@/%@.bundle", PLRootPath(@"/System/Library/PreferenceBundles"), bundleName];
 			#endif
 
 		// Really? (/System/Library failed...)

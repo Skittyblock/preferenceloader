@@ -1,9 +1,7 @@
 #import <Preferences/Preferences.h>
 #import <substrate.h>
 #import <dlfcn.h>
-// jbroot(): see the note in prefs.xm. Resolves the install prefix at runtime, so the same build
-// works on rootful, rootless and roothide.
-#import <roothide.h>
+#import "../paths.h"
 
 #import "../libprefs/prefs.h"
 #import "PLRootList.h"
@@ -68,7 +66,7 @@ static NSInteger PSSpecifierSort(PSSpecifier *a1, PSSpecifier *a2, void *context
 		#if SIMULATOR
 		NSString *preferencesDirectory = @"/opt/simject/PreferenceLoader/Preferences";
 		#else
-		NSString *preferencesDirectory = jbroot(@"/Library/PreferenceLoader/Preferences");
+		NSString *preferencesDirectory = PLRootPath(@"/Library/PreferenceLoader/Preferences");
 		#endif
 		NSArray *subpaths = [[NSFileManager defaultManager] subpathsOfDirectoryAtPath:preferencesDirectory error:NULL];
 		for(NSString *item in subpaths) {

@@ -2,7 +2,7 @@
 #import "PLSwiftMeta.h"
 #import "PLHeap.h"
 #import <UIKit/UIKit.h>
-#import <roothide.h>
+#import "../paths.h"
 #import "../libprefs/prefs.h"
 
 // Present at runtime but absent from the headers theos ships, so they are declared here rather
@@ -219,15 +219,14 @@ static const char *const kPLSectionIdentityCase = "connectedHeadphones";
 // Where PreferenceLoader keeps its entries, resolved at runtime rather than written down.
 //
 // The prefix differs per jailbreak: none on rootful, /var/jb on rootless, and a per-install
-// random path under roothide, which cannot be hardcoded at all. jbroot() answers for all three --
-// it is roothide's own function under that scheme, and falls back to libroot's runtime lookup
-// otherwise, so one build is correct wherever it is installed.
+// random path under roothide, which cannot be hardcoded at all. PLRootPath() uses roothide's
+// resolver under that scheme and libroot's runtime lookup otherwise.
 static NSString *PLPreferencesDirectory(void) {
-    return jbroot(@"/Library/PreferenceLoader/Preferences");
+    return PLRootPath(@"/Library/PreferenceLoader/Preferences");
 }
 
 static NSString *PLPreferenceBundlesDirectory(void) {
-    return jbroot(@"/Library/PreferenceBundles");
+    return PLRootPath(@"/Library/PreferenceBundles");
 }
 
 // The directory the entry's plist was read out of. That is the Preferences directory itself for
