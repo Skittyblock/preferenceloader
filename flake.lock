@@ -1,0 +1,84 @@
+{
+  "nodes": {
+    "nixpkgs": {
+      "locked": {
+        "lastModified": 1793345420,
+        "narHash": "sha256-e/yiZ31gXRROBDcnOtT3YwDQ73NVG9Cepccbt86LIn8=",
+        "owner": "NixOS",
+        "repo": "nixpkgs",
+        "rev": "885ba4d038f10c3d17d7a92e8c3cc185b99c9158",
+        "type": "github"
+      },
+      "original": {
+        "owner": "NixOS",
+        "ref": "nixpkgs-unstable",
+        "repo": "nixpkgs",
+        "type": "github"
+      }
+    },
+    "root": {
+      "inputs": {
+        "nixpkgs": "nixpkgs",
+        "sdks": "sdks",
+        "theos": "theos",
+        "theos-roothide": "theos-roothide"
+      }
+    },
+    "sdks": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1732393915,
+        "narHash": "sha256-pY0hNZT0v3uVtlW/lW2pJuErcVLWlLVIOsC6hx+uG+s=",
+        "owner": "theos",
+        "repo": "sdks",
+        "rev": "0222fd5413cf4b9af096f37b4621afa2688572f7",
+        "type": "github"
+      },
+      "original": {
+        "owner": "theos",
+        "repo": "sdks",
+        "type": "github"
+      }
+    },
+    "theos": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1793193955,
+        "narHash": "sha256-oIzPURur7LGGP57iRvU4kWvZuLSwf/pzP5W24KIYBig=",
+        "ref": "master",
+        "rev": "6e7b8c40e0f5f9f5b2377800dc1e42cd2560d24a",
+        "revCount": 2136,
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/theos/theos"
+      },
+      "original": {
+        "ref": "master",
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/theos/theos"
+      }
+    },
+    "theos-roothide": {
+      "flake": false,
+      "locked": {
+        "lastModified": 1793209880,
+        "narHash": "sha256-JmcC48l2dz/8gjHT6kCFLDwNVJGjfW2rZXf8etZULBg=",
+        "ref": "master",
+        "rev": "3ac89c984ec652fd16bcd91b33ae16de45ce76fa",
+        "revCount": 2142,
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/roothide/theos"
+      },
+      "original": {
+        "ref": "master",
+        "submodules": true,
+        "type": "git",
+        "url": "https://github.com/roothide/theos"
+      }
+    }
+  },
+  "root": "root",
+  "version": 7
+}

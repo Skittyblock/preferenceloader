@@ -3,7 +3,7 @@
 #import "PLHeap.h"
 #import <UIKit/UIKit.h>
 #import <roothide.h>
-#import "prefs.h"
+#import "../libprefs/prefs.h"
 
 // Present at runtime but absent from the headers theos ships, so they are declared here rather
 // than reached for through performSelector.

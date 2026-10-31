@@ -15,7 +15,7 @@
 # another in packages/: the rootless and roothide theos modules force iphoneos-arm64 and
 # iphoneos-arm64e respectively, and rootful keeps the legacy iphoneos-arm from control.
 
-SCHEME ?= rootless
+SCHEME ?= roothide
 ifeq ($(filter $(SCHEME),rootless roothide rootful),)
 $(error SCHEME must be one of rootless, roothide or rootful -- got '$(SCHEME)')
 endif
@@ -65,7 +65,7 @@ endif
 PL_PREFERENCES_TBD = $(PL_PRIVATE_SDK)/System/Library/PrivateFrameworks/Preferences.framework/Preferences.tbd
 
 LIBRARY_NAME = libprefs
-libprefs_FILES = prefs.xm
+libprefs_FILES = src/libprefs/prefs.xm
 libprefs_FRAMEWORKS = UIKit
 libprefs_LIBRARIES = substrate
 libprefs_CFLAGS = -I. $(PL_DEFINES)
@@ -73,13 +73,13 @@ libprefs_LDFLAGS = $(PL_PREFERENCES_TBD)
 libprefs_INSTALL_PATH = /usr/lib
 
 TWEAK_NAME = PreferenceLoader
-PreferenceLoader_FILES = Tweak.xm PLSwiftMeta.m PLHeap.m PLRootList.m PLCrashLog.m PLSwiftString.swift PLSwiftToggle.swift
+PreferenceLoader_FILES = src/PreferenceLoader/Tweak.xm $(wildcard src/PreferenceLoader/*.m src/PreferenceLoader/*.swift)
 
 # The navigation trace is compiled into DEBUG builds only. logos generates hook registration
 # ahead of the C preprocessor, so a %hook cannot be #if'd out of a file that is being built --
 # leaving the file out of the target is what keeps it out of a release package.
 ifneq ($(findstring DEBUG,$(THEOS_SCHEMA)),)
-PreferenceLoader_FILES += PLNavigationTrace.xm
+PreferenceLoader_FILES += src/PreferenceLoader/PLNavigationTrace.xm
 endif
 PreferenceLoader_FRAMEWORKS = UIKit
 PreferenceLoader_LIBRARIES = prefs
@@ -91,7 +91,7 @@ include $(THEOS_MAKE_PATH)/tweak.mk
 
 after-libprefs-stage::
 	$(ECHO_NOTHING)mkdir -p $(THEOS_STAGING_DIR)/usr/include/libprefs$(ECHO_END)
-	$(ECHO_NOTHING)cp prefs.h $(THEOS_STAGING_DIR)/usr/include/libprefs/prefs.h$(ECHO_END)
+	$(ECHO_NOTHING)cp src/libprefs/prefs.h $(THEOS_STAGING_DIR)/usr/include/libprefs/prefs.h$(ECHO_END)
 
 after-stage::
 	@find $(THEOS_STAGING_DIR) -iname '*.plist' -exec plutil -convert binary1 {} \;

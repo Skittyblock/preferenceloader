@@ -5,7 +5,7 @@
 // works on rootful, rootless and roothide.
 #import <roothide.h>
 
-#import "prefs.h"
+#import "../libprefs/prefs.h"
 #import "PLRootList.h"
 #import "PLCrashLog.h"
 

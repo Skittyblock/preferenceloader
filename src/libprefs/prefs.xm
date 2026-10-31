@@ -13,7 +13,7 @@
 #import "prefs.h"
 
 #define DEBUG_TAG "libprefs"
-#import "debug.h"
+#import "../PreferenceLoader/debug.h"
 
 /* {{{ Imports (Preferences.framework) */
 extern "C" NSArray* SpecifiersFromPlist(NSDictionary* plist,
@@ -353,7 +353,7 @@ static void pl_lazyLoadBundleCore(id self, SEL _cmd, PSSpecifier *specifier, voi
 
 // This hook does not seem to be needed on modern iOS, and actually breaks some things
 // (Safari settings after entering a subpane, blank titles on Phone > Mute Unknown Calls
-// and Phone > Call Blocking and Identification). 
+// and Phone > Call Blocking and Identification).
 // However, I'm not sure what iOS versions need it (and we want to still support rootful),
 // so I'm leaving it here but gated.
 

@@ -6,3 +6,8 @@ debs
 *.deb
 packages/
 .DS_Store
+compile_commands.json
+.cache
+result
+/control
+/Filter.plist
