@@ -1,0 +1,41 @@
+name: Build release packages
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.release.tag_name }}
+
+      - uses: cachix/install-nix-action@v31
+
+      - name: Check Apple toolchain
+        run: |
+          test "$(uname -m)" = arm64
+          xcodebuild -version
+          xcrun --sdk iphoneos --show-sdk-path
+
+      - name: Build all package schemes
+        run: nix build .#all --print-build-logs
+
+      - name: Upload packages to release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          RELEASE_TAG: ${{ github.event.release.tag_name }}
+        run: |
+          shopt -s nullglob
+          packages=(result/rootful/*.deb result/rootless/*.deb result/roothide/*.deb)
+          if (( ${#packages[@]} != 3 )); then
+            echo "Expected three Debian packages, found ${#packages[@]}." >&2
+            exit 1
+          fi
+          gh release upload "$RELEASE_TAG" "${packages[@]}" --clobber
