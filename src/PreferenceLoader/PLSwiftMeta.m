@@ -116,12 +116,17 @@ static const void *PLValueWitnesses(const void *metadata) {
     return PL_STRIP_DATA(((const void *const *)metadata)[-1]);
 }
 
-const void *PLSwiftTypeByMangledName(const char *mangledName) {
+static PLTypeByNameFn PLTypeByNameResolver(void) {
     static PLTypeByNameFn fn;
     static dispatch_once_t once;
     dispatch_once(&once, ^{
         fn = (PLTypeByNameFn)dlsym(RTLD_DEFAULT, "swift_getTypeByMangledNameInContext");
     });
+    return fn;
+}
+
+const void *PLSwiftTypeByMangledName(const char *mangledName) {
+	PLTypeByNameFn fn = PLTypeByNameResolver();
     if (!fn || !mangledName) return NULL;
     return fn(mangledName, strlen(mangledName), NULL, NULL);
 }
@@ -168,6 +173,48 @@ static const char *PLRecordName(const void *metadata, uint32_t index) {
     if (!record) return NULL;
     const uint8_t *nameSlot = record + kPLFieldRecordName;
     return (const char *)PLRelative(nameSlot, *(const int32_t *)nameSlot, NO);
+}
+
+static size_t PLSymbolicMangledLength(const char *name) {
+    const uint8_t *start = (const uint8_t *)name;
+    const uint8_t *cursor = start;
+    while (*cursor) {
+        uint8_t byte = *cursor++;
+        if (byte >= 0x01 && byte <= 0x17) cursor += 4;
+        else if (byte >= 0x18 && byte <= 0x1f) cursor += sizeof(void *);
+    }
+    return (size_t)(cursor - start);
+}
+
+const void *PLSwiftTypeOfField(const void *metadata, const char *name) {
+    if (!metadata || !name)
+        return NULL;
+    const void *descriptor = PLDescriptor(metadata);
+    if (!descriptor)
+        return NULL;
+    uint32_t flags = *(const uint32_t *)descriptor;
+    uint32_t kind = flags & 0x1f;
+    BOOL isClass = PLIsClassMetadata(metadata);
+    // Class generic arguments need a descriptor-dependent offset, not metadata +a 2.
+    if (isClass ? (kind != 16 || (flags & 0x80)) : (kind != 17 && kind != 18))
+        return NULL;
+    const void *fd = PLFieldDescriptor(metadata);
+    PLTypeByNameFn fn = PLTypeByNameResolver();
+    if (!fd || !fn)
+        return NULL;
+    uint32_t count = *(const uint32_t *)((const uint8_t *)fd + kPLFieldDescNumFields);
+    for (uint32_t i = 0; i < count; i++) {
+        const char *field = PLRecordName(metadata, i);
+        if (!field || strcmp(field, name) != 0)
+            continue;
+        const uint8_t *slot = PLRecord(metadata, i) + kPLFieldRecordType;
+        const char *mangled = PLRelative(slot, *(const int32_t *)slot, NO);
+        if (!mangled)
+            return NULL;
+        const void *const *arguments = isClass ? NULL : (const void *const *)metadata + 2;
+        return fn(mangled, PLSymbolicMangledLength(mangled), descriptor, arguments);
+    }
+    return NULL;
 }
 
 int32_t PLSwiftStructOffsetOfField(const void *metadata, const char *name) {

@@ -348,6 +348,71 @@ static BOOL PLIsSwiftUIObject(id object) {
 %end
 /* }}} */
 
+%group iOS27
+
+@interface IFConcreteImage : NSObject
+- (instancetype)initWithCGImage:(CGImageRef)image scale:(CGFloat)scale;
+@end
+@interface ISImageBagIcon : NSObject
+- (instancetype)initWithImages:(NSArray *)images;
+- (id)imageForImageDescriptor:(id)descriptor;
+- (void)getImageForImageDescriptor:(id)descriptor completion:(void (^)(id))completion;
+@end
+
+static char kPLBitmapImageKey;
+
+%subclass PLBitmapIcon : ISImageBagIcon
+
+- (id)imageForImageDescriptor:(id)descriptor {
+	return objc_getAssociatedObject(self, &kPLBitmapImageKey);
+}
+
+- (void)getImageForImageDescriptor:(id)descriptor completion:(void (^)(id))completion {
+	if (completion) completion(objc_getAssociatedObject(self, &kPLBitmapImageKey));
+}
+
+%end
+
+%hook UINavigationController
+
+- (void)pushViewController:(UIViewController *)controller animated:(BOOL)animated {
+	UIViewController *pane = PLSettings27PaneForPush(self);
+	if (pane && ![self.viewControllers containsObject:pane]) {
+		[(PSViewController *)pane setRootController:(id)self];
+		controller = pane;
+	}
+	%orig(controller, animated);
+}
+
+%end
+
+%hook ISIconFactory
+
+- (id)initWithType:(id)type {
+	NSString *identifier =
+	    [type respondsToSelector:@selector(identifier)] ? [type identifier] : type;
+	if ([identifier isKindOfClass:NSString.class] && [identifier hasPrefix:kPLIconPrefix]) {
+		NSString *key = [identifier substringFromIndex:kPLIconPrefix.length];
+		UIImage *image = PLPreparedRootListIcon(key);
+		Class imageClass = objc_getClass("IFConcreteImage");
+		if (%c(PLBitmapIcon) && imageClass) {
+			id bitmap = image.CGImage
+			    ? [(IFConcreteImage *)[imageClass alloc] initWithCGImage:image.CGImage scale:image.scale]
+			    : nil;
+			id result = [(ISImageBagIcon *)[%c(PLBitmapIcon) alloc] initWithImages:@[]];
+			objc_setAssociatedObject(result, &kPLBitmapImageKey, bitmap, OBJC_ASSOCIATION_RETAIN_NONATOMIC);
+			[bitmap release];
+			[self release];
+			return result;
+		}
+	}
+	return %orig(type);
+}
+
+%end
+
+%end
+
 %ctor {
 	PLCrashLogInstall();
 	PLRootListNote([NSString stringWithFormat:@"ctor in %@", NSBundle.mainBundle.bundleIdentifier]);
@@ -370,7 +435,12 @@ static BOOL PLIsSwiftUIObject(id object) {
 	// moving or renaming the scene delegate, an objc_getClass probe can.
 	PLRootListNote([NSString stringWithFormat:@"targetRootClass = %s",
 	               targetRootClass ? class_getName(targetRootClass) : "(none)"]);
-	if (objc_getClass("_TtC11SettingsApp24SettingsAppSceneDelegate")) {
+	if (objc_getClass("_TtC11SettingsApp24SettingsSidebarListState")) {
+		%init(iOS27);
+		dispatch_async(dispatch_get_main_queue(), ^{
+			PLSettings27Start();
+		});
+	} else if (objc_getClass("_TtC11SettingsApp24SettingsAppSceneDelegate")) {
 		%init(RootList);
 		%init(Navigation);
 		PLReopenRefusalWindowOnForeground();

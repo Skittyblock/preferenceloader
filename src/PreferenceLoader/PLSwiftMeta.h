@@ -18,6 +18,8 @@ extern "C" {
 // "11SettingsApp31PrimarySettingsListSectionModelV". NULL when unresolvable.
 const void *PLSwiftTypeByMangledName(const char *mangledName);
 
+const void *PLSwiftTypeOfField(const void *metadata, const char *name);
+
 // Value witness facts. Stride is what array indexing needs; size is not, because a struct may
 // be padded.
 size_t PLSwiftTypeSize(const void *metadata);
@@ -78,8 +80,8 @@ void PLSwiftValueDestroy(void *value, const void *metadata);
 // the template: there is no way to name _ContiguousArrayStorage<Element> for an element type
 // internal to another module, but the array already in the model is the right specialisation.
 // NULL if the template has no buffer.
-void *PLSwiftArrayAllocate(const void *templateField, NSInteger count,
-                           size_t stride, size_t alignmentMask);
+void *PLSwiftArrayAllocate(const void *templateField, NSInteger count, size_t stride,
+                           size_t alignmentMask);
 
 // Byte offset of the first element inside an array buffer.
 size_t PLSwiftArrayElementOffset(void);
@@ -93,6 +95,12 @@ NSInteger PLSwiftArrayCapacity(const void *arrayField);
 
 // Address of element `index`, or NULL when out of range.
 const void *PLSwiftArrayElement(const void *arrayField, NSInteger index, size_t stride);
+
+// Implemented in PLSwiftCollections.swift
+void PLSwiftArrayRemoveAll(void *arrayField, const void *elementMetadata);
+void PLSwiftArrayAppendValue(void *arrayField, const void *value, const void *elementMetadata);
+BOOL PLSwiftDictionarySetValue(void *dictionary, const void *key, const void *keyMeta,
+                               const void *value, const void *valueMeta);
 
 // Implemented in PLSwiftToggle.swift; see there for why they are not plain C.
 typedef void (*PLBoolCallback)(const void *token, BOOL value);

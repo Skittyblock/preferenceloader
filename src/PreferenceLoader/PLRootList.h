@@ -11,9 +11,19 @@
 // a layout change in a future release fails to resolve instead of corrupting the model. See
 // PLSwiftMeta.h.
 
+static NSString *const kPLIconPrefix = @"xyz.skitty.preferenceloader.icon.";
+
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+void PLSettings27Start(void);
+UIViewController *PLSettings27PaneForPush(UINavigationController *navigation);
+NSArray<NSString *> *PLTweakTitles(void);
+NSArray<NSDictionary *> *PLRootListPreferenceEntries(void);
+UIViewController *PLRootListPaneForEntry(NSDictionary *record);
+UIImage *PLIconForEntry(NSDictionary *record);
+UIImage *PLPreparedRootListIcon(NSString *identifier);
 
 // Installs a runloop observer that appends the section to each snapshot Apple publishes.
 //

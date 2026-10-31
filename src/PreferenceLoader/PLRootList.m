@@ -264,12 +264,15 @@ static NSMutableDictionary<NSString *, NSDictionary *> *PLEntriesByTitle(void) {
 // the table there releases entry dictionaries a pane still being built is reading, and the
 // specifier machinery keeps a pointer to the freed memory. The set of installed tweaks does not
 // change while Settings runs, so reading it once is both correct and cheaper.
-static NSArray<NSString *> *PLTweakTitles(void) {
+static NSArray<NSDictionary *> *gPLPreferenceEntries;
+
+NSArray<NSString *> *PLTweakTitles(void) {
     static NSArray *titles;
     static dispatch_once_t once;
     dispatch_once(&once, ^{
         NSString *directory = PLPreferencesDirectory();
         NSMutableArray<NSString *> *found = [NSMutableArray array];
+        NSMutableArray<NSDictionary *> *entries = [NSMutableArray array];
         // Recursive, like the specifier injection in Tweak.xm. An entry shipped inside a
         // subdirectory is a localized one, and enumerating only the top level left those out of
         // the list altogether.
@@ -294,18 +297,30 @@ static NSArray<NSString *> *PLTweakTitles(void) {
             // turns an entry into specifiers, and a bundle without an explicit label falls back
             // to it. Its directory is kept because libprefs wants that too, as the bundle the
             // entry's strings come out of, and because the icon sits beside the plist.
-            PLEntriesByTitle()[label] = @{ @"entry": entry,
-                                          @"name": item.lastPathComponent.stringByDeletingPathExtension,
-                                          @"source": path.stringByDeletingLastPathComponent };
+            NSDictionary *record = @{
+                @"entry" : entry,
+                @"name" : item.lastPathComponent.stringByDeletingPathExtension,
+                @"source" : path.stringByDeletingLastPathComponent,
+                @"label" : label,
+                @"identifier" : item
+            };
+            PLEntriesByTitle()[label] = record;
+            [entries addObject:record];
         }
+        gPLPreferenceEntries = [entries copy];
         [found sortUsingSelector:@selector(localizedCaseInsensitiveCompare:)];
         titles = [found copy];
     });
     return titles;
 }
 
-// The image a PreferenceLoader entry names, looked up the way PreferenceLoader looks it up.
-static UIImage *PLIconForEntry(NSDictionary *record) {
+NSArray<NSDictionary *> *PLRootListPreferenceEntries(void) {
+    PLTweakTitles();
+    return gPLPreferenceEntries;
+}
+
+// The path to an image a PreferenceLoader entry names, looked up the way PreferenceLoader looks it up.
+static NSString *PLIconPathForEntry(NSDictionary *record) {
     NSDictionary *entry = record[@"entry"];
     if (![entry isKindOfClass:NSDictionary.class]) return nil;
     NSString *name = entry[@"icon"];
@@ -324,19 +339,23 @@ static UIImage *PLIconForEntry(NSDictionary *record) {
     [directories addObject:source];
     if (![source isEqualToString:PLPreferencesDirectory()]) [directories addObject:PLPreferencesDirectory()];
 
+    NSFileManager *files = NSFileManager.defaultManager;
     for (NSString *directory in directories) {
         NSString *path = [directory stringByAppendingPathComponent:name];
-        UIImage *image = [UIImage imageWithContentsOfFile:path];
-        if (image) return image;
+        if ([files fileExistsAtPath:path]) return path;
         // Icons are usually shipped without the scale suffix in the entry.
         for (NSString *suffix in @[@"@3x", @"@2x"]) {
             NSString *scaled = [[[path stringByDeletingPathExtension] stringByAppendingString:suffix]
                                 stringByAppendingPathExtension:path.pathExtension ?: @"png"];
-            image = [UIImage imageWithContentsOfFile:scaled];
-            if (image) return image;
+            if ([files fileExistsAtPath:scaled]) return scaled;
         }
     }
     return nil;
+}
+
+UIImage *PLIconForEntry(NSDictionary *record) {
+    NSString *path = PLIconPathForEntry(record);
+    return path ? [UIImage imageWithContentsOfFile:path] : nil;
 }
 
 // --- inline switch rows ---------------------------------------------------------------------
@@ -1362,10 +1381,15 @@ UIViewController *PLRootListPaneForCurrentSelection(void) {
     NSString *title = PLSelectedTweakTitle(&ctx);
     if (!title) return nil;
 
+    NSDictionary *record = PLEntriesByTitle()[title];
+    return record ? PLRootListPaneForEntry(record) : nil;
+}
+
+UIViewController *PLRootListPaneForEntry(NSDictionary *record) {
+    NSString *title = record[@"label"];
     UIViewController *pane = PLPaneCache()[title];
     if (!pane) {
-        NSDictionary *record = PLEntriesByTitle()[title];
-        pane = record ? PLControllerForEntry(record) : nil;
+        pane = PLControllerForEntry(record);
         if (!pane) { PLRootLog(@"[open] no controller for %@", title); return nil; }
         PLPaneCache()[title] = pane;
 
